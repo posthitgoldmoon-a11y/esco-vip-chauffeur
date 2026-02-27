@@ -4,7 +4,6 @@ import 'dart:convert';
 
 class AddressSearchDialog extends StatefulWidget {
   const AddressSearchDialog({super.key});
-
   @override
   State<AddressSearchDialog> createState() => _AddressSearchDialogState();
 }
@@ -14,7 +13,6 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
   List<Map<String, String>> _searchResults = [];
   bool _isSearching = false;
   String? _errorMessage;
-
   static const String _kakaoRestApiKey = '2e2424a60986a1ec5d48ac84a3d47474';
 
   @override
@@ -32,13 +30,15 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
     try {
       final keywordResponse = await http.get(
         Uri.parse(
-          'https://dapi.kakao.com/v2/local/search/keyword.json?query=${Uri.encodeComponent(_searchController.text.trim())}&size=10',
+          'https://dapi.kakao.com/v2/local/search/keyword.json'
+          '?query=${Uri.encodeComponent(_searchController.text.trim())}&size=10',
         ),
         headers: {'Authorization': 'KakaoAK $_kakaoRestApiKey'},
       );
       final addressResponse = await http.get(
         Uri.parse(
-          'https://dapi.kakao.com/v2/local/search/address.json?query=${Uri.encodeComponent(_searchController.text.trim())}&size=10',
+          'https://dapi.kakao.com/v2/local/search/address.json'
+          '?query=${Uri.encodeComponent(_searchController.text.trim())}&size=10',
         ),
         headers: {'Authorization': 'KakaoAK $_kakaoRestApiKey'},
       );
@@ -69,8 +69,7 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
               : '';
           final jibun = doc['address_name'] as String? ?? '';
           final dup = results.any(
-            (r) => r['roadAddress'] == road || r['address'] == jibun,
-          );
+              (r) => r['roadAddress'] == road || r['address'] == jibun);
           if (!dup && (road.isNotEmpty || jibun.isNotEmpty)) {
             results.add({
               'placeName': '',
@@ -156,9 +155,12 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
       ),
     );
 
-    if (result != null && mounted) Navigator.pop(context, result);
     detailCtrl.dispose();
     nameCtrl.dispose();
+
+    if (result != null && mounted) {
+      Navigator.pop(context, result);
+    }
   }
 
   @override
@@ -168,6 +170,7 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
         constraints: const BoxConstraints(maxHeight: 600),
         child: Column(
           children: [
+            // ─── 검색 헤더 ───────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -204,7 +207,8 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: _isSearching ? null : _searchAddress,
+                        onPressed:
+                            _isSearching ? null : _searchAddress,
                         child: const Text('검색'),
                       ),
                     ],
@@ -213,6 +217,8 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
               ),
             ),
             const Divider(height: 1),
+
+            // ─── 검색 결과 ───────────────────────────────────────
             Expanded(
               child: _isSearching
                   ? const Center(child: CircularProgressIndicator())
@@ -221,10 +227,14 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                           child: Padding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.search_off,
-                                    size: 64, color: Colors.grey),
+                                const Icon(
+                                  Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   _errorMessage!,
@@ -235,18 +245,23 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                           ),
                         )
                       : _searchResults.isEmpty
-                          ? Center(
+                          ? const Center(
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.location_on,
-                                      size: 64, color: Colors.grey),
-                                  const SizedBox(height: 16),
-                                  const Text('주소를 검색해주세요'),
-                                  const SizedBox(height: 8),
-                                  const Text(
+                                  Icon(
+                                    Icons.location_on,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text('주소를 검색해주세요'),
+                                  SizedBox(height: 8),
+                                  Text(
                                     '도로명, 지번, 건물명으로 검색 가능합니다',
-                                    style: TextStyle(color: Colors.grey),
+                                    style:
+                                        TextStyle(color: Colors.grey),
                                   ),
                                 ],
                               ),
@@ -258,8 +273,10 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                               itemBuilder: (context, index) {
                                 final r = _searchResults[index];
                                 return ListTile(
-                                  leading: const Icon(Icons.location_on,
-                                      color: Colors.grey),
+                                  leading: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.grey,
+                                  ),
                                   title: Text(
                                     r['placeName']!.isNotEmpty
                                         ? r['placeName']!
@@ -273,21 +290,24 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                                         Text(
                                           r['roadAddress']!,
                                           style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey),
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       if (r['address']!.isNotEmpty &&
-                                          r['address'] != r['roadAddress'])
+                                          r['address'] !=
+                                              r['roadAddress'])
                                         Text(
                                           r['address']!,
                                           style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey),
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                     ],
                                   ),
-                                  onTap: () =>
-                                      _selectAddress(r['roadAddress']!),
+                                  onTap: () => _selectAddress(
+                                      r['roadAddress']!),
                                 );
                               },
                             ),

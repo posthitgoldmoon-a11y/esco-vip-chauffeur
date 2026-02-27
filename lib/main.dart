@@ -1,31 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'firebase_options.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'services/storage_service.dart';
 import 'screens/splash_screen.dart';
 import 'providers/app_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  KakaoSdk.init(
-    nativeAppKey: '3c500cd9fef2607c8015a2b5d12b882b',
-  );
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp();
+  KakaoSdk.init(nativeAppKey: '3c500cd9fef2607c8015a2b5d12b882b');
   await StorageService.init();
-  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -51,8 +41,7 @@ class MyApp extends StatelessWidget {
           cardTheme: CardThemeData(
             elevation: 1,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+                borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: Colors.white,
             surfaceTintColor: Colors.transparent,
@@ -63,8 +52,7 @@ class MyApp extends StatelessWidget {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+                  borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
           ),
@@ -83,7 +71,8 @@ class MyApp extends StatelessWidget {
             ),
             filled: true,
             fillColor: Colors.grey.shade50,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
         ),
         home: const SplashScreen(),

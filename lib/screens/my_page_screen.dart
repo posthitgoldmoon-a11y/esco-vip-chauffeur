@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/app_provider.dart';
@@ -33,19 +34,39 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   Future<void> _loadData() async {
-    final passengers = await StorageService.getPassengers();
-    final vehicles = await StorageService.getVehicles();
-    final locations = await StorageService.getLocations();
-    final cards = await StorageService.getPaymentCards();
-    final preferences = await StorageService.getPartnerPreferences();
+    try {
+      final passengers = await StorageService.getPassengers();
+      final vehicles = await StorageService.getVehicles();
+      final locations = await StorageService.getLocations();
+      final cards = await StorageService.getPaymentCards();
+      final preferences = await StorageService.getPartnerPreferences();
 
-    setState(() {
-      _passengers = passengers;
-      _vehicles = vehicles;
-      _locations = locations;
-      _paymentCards = cards;
-      _partnerPreferences = preferences;
-    });
+      if (kDebugMode) {
+        print('✅ 데이터 로드 성공:');
+        print('  - 탑승자: ${passengers.length}개');
+        print('  - 차량: ${vehicles.length}개');
+        print('  - 장소: ${locations.length}개');
+        print('  - 카드: ${cards.length}개');
+        print('  - 파트너 선호: ${preferences.length}개');
+      }
+
+      setState(() {
+        _passengers = passengers;
+        _vehicles = vehicles;
+        _locations = locations;
+        _paymentCards = cards;
+        _partnerPreferences = preferences;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ 데이터 로드 실패: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('데이터 로드 실패: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -244,11 +265,27 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ElevatedButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty || phoneCtrl.text.trim().isEmpty) return;
-              final p = PassengerInfo(id: const Uuid().v4(), name: nameCtrl.text.trim(), phoneNumber: phoneCtrl.text.trim());
-              await StorageService.savePassenger(p);
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              _loadData();
+              try {
+                final p = PassengerInfo(id: const Uuid().v4(), name: nameCtrl.text.trim(), phoneNumber: phoneCtrl.text.trim());
+                await StorageService.savePassenger(p);
+                if (kDebugMode) {
+                  print('✅ 탑승자 저장 성공: ${p.name} (${p.id})');
+                }
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('탑승자 정보가 저장되었습니다')),
+                );
+                _loadData();
+              } catch (e) {
+                if (kDebugMode) {
+                  print('❌ 탑승자 저장 실패: $e');
+                }
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('저장 실패: $e')),
+                );
+              }
             },
             child: const Text('추가'),
           ),
@@ -278,11 +315,27 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ElevatedButton(
             onPressed: () async {
               if (typeCtrl.text.trim().isEmpty || plateCtrl.text.trim().isEmpty) return;
-              final v = VehicleInfo(id: const Uuid().v4(), vehicleType: typeCtrl.text.trim(), licensePlate: plateCtrl.text.trim());
-              await StorageService.saveVehicle(v);
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              _loadData();
+              try {
+                final v = VehicleInfo(id: const Uuid().v4(), vehicleType: typeCtrl.text.trim(), licensePlate: plateCtrl.text.trim());
+                await StorageService.saveVehicle(v);
+                if (kDebugMode) {
+                  print('✅ 차량 저장 성공: ${v.vehicleType} ${v.licensePlate} (${v.id})');
+                }
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('차량 정보가 저장되었습니다')),
+                );
+                _loadData();
+              } catch (e) {
+                if (kDebugMode) {
+                  print('❌ 차량 저장 실패: $e');
+                }
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('저장 실패: $e')),
+                );
+              }
             },
             child: const Text('추가'),
           ),
@@ -299,15 +352,34 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
 
     if (result != null) {
-      final location = LocationInfo(
-        id: const Uuid().v4(),
-        address: result['address']!,
-        detailAddress: result['detailAddress']!.isEmpty ? null : result['detailAddress'],
-        name: result['name']!.isEmpty ? null : result['name'],
-      );
-      
-      await StorageService.saveLocation(location);
-      _loadData();
+      try {
+        final location = LocationInfo(
+          id: const Uuid().v4(),
+          address: result['address']!,
+          detailAddress: result['detailAddress']!.isEmpty ? null : result['detailAddress'],
+          name: result['name']!.isEmpty ? null : result['name'],
+        );
+        
+        await StorageService.saveLocation(location);
+        if (kDebugMode) {
+          print('✅ 장소 저장 성공: ${location.address} (${location.id})');
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('장소 정보가 저장되었습니다')),
+          );
+        }
+        _loadData();
+      } catch (e) {
+        if (kDebugMode) {
+          print('❌ 장소 저장 실패: $e');
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('저장 실패: $e')),
+          );
+        }
+      }
     }
   }
 

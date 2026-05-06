@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AddressSearchDialog extends StatefulWidget {
   const AddressSearchDialog({super.key});
@@ -11,6 +13,10 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
   final _searchController = TextEditingController();
   List<Map<String, String>> _searchResults = [];
   bool _isSearching = false;
+  String? _errorMessage;
+
+  // 카카오 REST API 키
+  static const String _kakaoRestApiKey = '2e2424a60986a1ec5d48ac84a3d47474';
 
   @override
   void dispose() {
@@ -20,113 +26,104 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
 
   Future<void> _searchAddress() async {
     if (_searchController.text.trim().isEmpty) return;
-
-    setState(() => _isSearching = true);
-
-    // ⚠️ 현재는 데모용 샘플 데이터를 사용합니다
-    // 실제 배포 시에는 카카오 주소 검색 API를 연동해야 합니다
-    // 
-    // 실제 API 연동 방법:
-    // 1. 카카오 개발자 센터에서 REST API 키 발급
-    // 2. pubspec.yaml에 http 패키지 추가 (이미 추가됨)
-    // 3. 아래 코드의 주석을 해제하고 YOUR_API_KEY를 실제 키로 교체
-    //
-    // import 'package:http/http.dart' as http;
-    // import 'dart:convert';
-    //
-    // final response = await http.get(
-    //   Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=${_searchController.text}'),
-    //   headers: {'Authorization': 'KakaoAK YOUR_REST_API_KEY'},
-    // );
-    // 
-    // if (response.statusCode == 200) {
-    //   final data = json.decode(response.body);
-    //   final documents = data['documents'] as List;
-    //   _searchResults = documents.map((doc) => {
-    //     'address': doc['address_name'] as String,
-    //     'roadAddress': doc['road_address_name'] as String? ?? doc['address_name'] as String,
-    //     'placeName': doc['place_name'] as String? ?? '',
-    //   }).toList();
-    // }
-
-    // ⚠️ 데모용 샘플 데이터 (실제 검색 결과 아님)
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final query = _searchController.text.trim();
-    final List<Map<String, String>> demoResults = [
-      {
-        'address': '서울특별시 광진구 광장동 (샘플 주소)',
-        'roadAddress': '서울특별시 광진구 강변역로 (샘플 주소)',
-        'placeName': '검색어: $query (데모 데이터)'
-      },
-      {
-        'address': '서울특별시 강남구 역삼동 837',
-        'roadAddress': '서울특별시 강남구 테헤란로 212',
-        'placeName': '강남 지역 (샘플)'
-      },
-      {
-        'address': '서울특별시 서초구 서초대로 396',
-        'roadAddress': '서울특별시 서초구 서초대로 396',
-        'placeName': '서초 지역 (샘플)'
-      },
-      {
-        'address': '서울특별시 송파구 올림픽로 300',
-        'roadAddress': '서울특별시 송파구 올림픽로 300',
-        'placeName': '송파 지역 (샘플)'
-      },
-      {
-        'address': '경기도 성남시 분당구 판교역로 166',
-        'roadAddress': '경기도 성남시 분당구 판교역로 166',
-        'placeName': '판교 지역 (샘플)'
-      },
-    ];
-
     setState(() {
-      _searchResults = demoResults;
-      _isSearching = false;
+      _isSearching = true;
+      _errorMessage = null;
     });
+    try {
+      final query = Uri.encodeComponent(_searchController.text.trim());
+
+      final keywordResponse = await http.get(
+        Uri.parse('https://dapi.kakao.com/v2/local/search/keyword.json?query=$query&size=10'),
+        headers: {'Authorization': 'KakaoAK $_kakaoRestApiKey'},
+      );
+      final addressResponse = await http.get(
+        Uri.parse('https://dapi.kakao.com/v2/local/search/address.json?query=$query&size=10'),
+        headers: {'Authorization': 'KakaoAK $_kakaoRestApiKey'},
+      );
+
+      final List<Map<String, String>> results = [];
+
+      if (keywordResponse.statusCode == 200) {
+        final data = json.decode(utf8.decode(keywordResponse.bodyBytes));
+        for (var doc in data['documents'] as List) {
+          final road  = doc['road_address_name'] as String? ?? '';
+          final jibun = doc['address_name']      as String? ?? '';
+          final place = doc['place_name']         as String? ?? '';
+          if (road.isNotEmpty || jibun.isNotEmpty) {
+            results.add({
+              'placeName':   place,
+              'roadAddress': road.isNotEmpty  ? road  : jibun,
+              'address':     jibun.isNotEmpty ? jibun : road,
+            });
+          }
+        }
+      }
+
+      if (addressResponse.statusCode == 200) {
+        final data = json.decode(utf8.decode(addressResponse.bodyBytes));
+        for (var doc in data['documents'] as List) {
+          final road  = doc['road_address'] != null
+              ? doc['road_address']['address_name'] as String? ?? ''
+              : '';
+          final jibun = doc['address_name'] as String? ?? '';
+          final dup = results.any((r) => r['roadAddress'] == road || r['address'] == jibun);
+          if (!dup && (road.isNotEmpty || jibun.isNotEmpty)) {
+            results.add({
+              'placeName':   '',
+              'roadAddress': road.isNotEmpty ? road : jibun,
+              'address':     jibun,
+            });
+          }
+        }
+      }
+
+      setState(() {
+        _searchResults = results;
+        _isSearching   = false;
+        if (results.isEmpty) {
+          _errorMessage = '검색 결과가 없습니다. 다른 검색어를 입력해주세요.';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isSearching   = false;
+        _errorMessage  = '검색 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.';
+        _searchResults = [];
+      });
+    }
   }
 
   Future<void> _selectAddress(String address) async {
-    final detailController = TextEditingController();
-    final nameController = TextEditingController();
+    final detailCtrl = TextEditingController();
+    final nameCtrl   = TextEditingController();
 
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('상세 주소 입력'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '도로명 주소',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('도로명 주소', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
               const SizedBox(height: 4),
-              Text(
-                address,
-                style: const TextStyle(fontSize: 14),
-              ),
+              Text(address, style: const TextStyle(fontSize: 14)),
               const SizedBox(height: 16),
               TextField(
-                controller: detailController,
+                controller: detailCtrl,
                 decoration: const InputDecoration(
                   labelText: '상세 주소 (선택)',
-                  hintText: '예: 3층 301호',
+                  hintText: '예) 3층 301호',
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: nameController,
+                controller: nameCtrl,
                 decoration: const InputDecoration(
                   labelText: '별칭 (선택)',
-                  hintText: '예: 집, 회사',
+                  hintText: '예) 회사, 자택',
                 ),
               ),
             ],
@@ -138,25 +135,20 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
             child: const Text('취소'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context, {
-                'address': address,
-                'detailAddress': detailController.text.trim(),
-                'name': nameController.text.trim(),
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.shade800,
-            ),
+            onPressed: () => Navigator.pop(context, {
+              'address':       address,
+              'detailAddress': detailCtrl.text.trim(),
+              'name':          nameCtrl.text.trim(),
+            }),
             child: const Text('확인'),
           ),
         ],
       ),
     );
 
-    if (result != null && mounted) {
-      Navigator.pop(context, result);
-    }
+    if (result != null && mounted) Navigator.pop(context, result);
+    detailCtrl.dispose();
+    nameCtrl.dispose();
   }
 
   @override
@@ -166,20 +158,14 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
         constraints: const BoxConstraints(maxHeight: 600),
         child: Column(
           children: [
-            // 검색 헤더
+            // ── 헤더 & 검색창 ──
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      const Text(
-                        '주소 검색',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      const Text('주소 검색', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.close),
@@ -194,22 +180,16 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                         child: TextField(
                           controller: _searchController,
                           decoration: const InputDecoration(
-                            hintText: '도로명, 지번, 건물명 검색',
+                            hintText: '도로명, 지번, 건물명으로 검색',
                             prefixIcon: Icon(Icons.search),
                           ),
                           onSubmitted: (_) => _searchAddress(),
+                          textInputAction: TextInputAction.search,
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: _searchAddress,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade800,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        ),
+                        onPressed: _isSearching ? null : _searchAddress,
                         child: const Text('검색'),
                       ),
                     ],
@@ -218,103 +198,64 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
               ),
             ),
             const Divider(height: 1),
-            // 검색 결과
+
+            // ── 결과 목록 ──
             Expanded(
               child: _isSearching
                   ? const Center(child: CircularProgressIndicator())
-                  : _searchResults.isEmpty
+                  : _errorMessage != null
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                '주소를 검색해주세요',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '도로명, 지번, 건물명으로 검색 가능합니다',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                                const SizedBox(height: 16),
+                                Text(_errorMessage!, textAlign: TextAlign.center),
+                              ],
+                            ),
                           ),
                         )
-                      : ListView.builder(
-                          itemCount: _searchResults.length + 1,
-                          itemBuilder: (context, index) {
-                            // 첫 번째 항목: 데모 데이터 안내
-                            if (index == 0) {
-                              return Container(
-                                margin: const EdgeInsets.all(12),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.amber.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '⚠️ 현재는 데모 데이터입니다\n실제 배포 시 카카오 주소 API 연동 필요',
-                                        style: TextStyle(
-                                          color: Colors.amber.shade900,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            
-                            final result = _searchResults[index - 1];
-                            return ListTile(
-                              leading: Icon(
-                                Icons.location_on,
-                                color: Colors.grey.shade700,
-                              ),
-                              title: Text(result['placeName']!.isNotEmpty 
-                                  ? result['placeName']! 
-                                  : result['roadAddress']!),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                      : _searchResults.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  Icon(Icons.location_on, size: 64, color: Colors.grey),
+                                  SizedBox(height: 16),
+                                  Text('주소를 검색해주세요'),
+                                  SizedBox(height: 8),
                                   Text(
-                                    result['roadAddress']!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
+                                    '도로명, 지번, 건물명으로 검색할 수 있습니다',
+                                    style: TextStyle(color: Colors.grey),
                                   ),
-                                  if (result['address']! != result['roadAddress']!)
-                                    Text(
-                                      result['address']!,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
                                 ],
                               ),
-                              onTap: () => _selectAddress(result['roadAddress']!),
-                            );
-                          },
-                        ),
+                            )
+                          : ListView.separated(
+                              itemCount: _searchResults.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final r = _searchResults[index];
+                                return ListTile(
+                                  leading: const Icon(Icons.location_on, color: Colors.grey),
+                                  title: Text(
+                                    r['placeName']!.isNotEmpty ? r['placeName']! : r['roadAddress']!,
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (r['placeName']!.isNotEmpty)
+                                        Text(r['roadAddress']!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                      if (r['address']!.isNotEmpty && r['address'] != r['roadAddress'])
+                                        Text(r['address']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                    ],
+                                  ),
+                                  onTap: () => _selectAddress(r['roadAddress']!),
+                                );
+                              },
+                            ),
             ),
           ],
         ),

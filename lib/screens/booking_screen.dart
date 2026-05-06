@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/app_provider.dart';
@@ -68,17 +69,31 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _loadSavedData() async {
-    final passengers = await StorageService.getPassengers();
-    final vehicles = await StorageService.getVehicles();
-    final locations = await StorageService.getLocations();
-    final preferences = await StorageService.getPartnerPreferences();
+    try {
+      final passengers = await StorageService.getPassengers();
+      final vehicles = await StorageService.getVehicles();
+      final locations = await StorageService.getLocations();
+      final preferences = await StorageService.getPartnerPreferences();
 
-    setState(() {
-      _savedPassengers = passengers;
-      _savedVehicles = vehicles;
-      _savedLocations = locations;
-      _savedPartnerPreferences = preferences;
-    });
+      if (kDebugMode) {
+        print('✅ 예약 화면 - 저장된 데이터 로드:');
+        print('  - 탑승자: ${passengers.length}개');
+        print('  - 차량: ${vehicles.length}개');
+        print('  - 장소: ${locations.length}개');
+        print('  - 파트너 선호: ${preferences.length}개');
+      }
+
+      setState(() {
+        _savedPassengers = passengers;
+        _savedVehicles = vehicles;
+        _savedLocations = locations;
+        _savedPartnerPreferences = preferences;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ 예약 화면 - 데이터 로드 실패: $e');
+      }
+    }
   }
 
   @override
@@ -170,6 +185,337 @@ class _BookingScreenState extends State<BookingScreen> {
       _hospitalCompanionHours = 1;
       _selectedDateTime = DateTime.now().add(const Duration(hours: 1));
     });
+  }
+
+  // 저장된 탑승자 선택
+  Future<void> _selectPassenger() async {
+    if (_savedPassengers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장된 탑승자가 없습니다. 마이페이지에서 탑승자를 추가해주세요.')),
+      );
+      return;
+    }
+
+    final selected = await showDialog<PassengerInfo>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('저장된 탑승자 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedPassengers.length,
+            itemBuilder: (context, index) {
+              final passenger = _savedPassengers[index];
+              return ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(passenger.name),
+                subtitle: Text(passenger.phoneNumber),
+                onTap: () => Navigator.pop(context, passenger),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _passengerNameController.text = selected.name;
+        _passengerPhoneController.text = selected.phoneNumber;
+      });
+    }
+  }
+
+  // 저장된 차량 선택
+  Future<void> _selectVehicle() async {
+    if (_savedVehicles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장된 차량이 없습니다. 마이페이지에서 차량을 추가해주세요.')),
+      );
+      return;
+    }
+
+    final selected = await showDialog<VehicleInfo>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('저장된 차량 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedVehicles.length,
+            itemBuilder: (context, index) {
+              final vehicle = _savedVehicles[index];
+              return ListTile(
+                leading: const Icon(Icons.directions_car),
+                title: Text(vehicle.vehicleType),
+                subtitle: Text(vehicle.licensePlate),
+                onTap: () => Navigator.pop(context, vehicle),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _vehicleTypeController.text = selected.vehicleType;
+        _licensePlateController.text = selected.licensePlate;
+      });
+    }
+  }
+
+  // 저장된 파트너 선호사항 선택
+  Future<void> _selectPartnerPreference() async {
+    if (_savedPartnerPreferences.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장된 파트너 선호사항이 없습니다. 마이페이지에서 추가해주세요.')),
+      );
+      return;
+    }
+
+    final selected = await showDialog<PartnerPreference>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('파트너 선택사항 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedPartnerPreferences.length,
+            itemBuilder: (context, index) {
+              final pref = _savedPartnerPreferences[index];
+              return ListTile(
+                leading: const Icon(Icons.person_search),
+                title: Text(pref.displayText),
+                onTap: () => Navigator.pop(context, pref),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedPartnerPreferenceId = selected.id;
+      });
+    }
+  }
+
+  // 저장된 장소 선택
+  Future<void> _selectLocation(TextEditingController controller) async {
+    if (_savedLocations.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장된 장소가 없습니다. 마이페이지에서 장소를 추가해주세요.')),
+      );
+      return;
+    }
+
+    final selected = await showDialog<LocationInfo>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('저장된 장소 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedLocations.length,
+            itemBuilder: (context, index) {
+              final location = _savedLocations[index];
+              return ListTile(
+                leading: const Icon(Icons.location_on),
+                title: Text(location.name ?? location.address),
+                subtitle: Text(location.address),
+                onTap: () => Navigator.pop(context, location),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        controller.text = selected.address;
+      });
+    }
+  }
+
+  // 날짜 선택
+  Future<void> _selectDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDateTime,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (date != null) {
+      setState(() {
+        _selectedDateTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          _selectedDateTime.hour,
+          _selectedDateTime.minute,
+        );
+      });
+    }
+  }
+
+  // 시간 선택
+  Future<void> _selectHour() async {
+    final hour = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('시작 시간 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: ListView.builder(
+            itemCount: 24,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text('${index.toString().padLeft(2, '0')}:00'),
+                onTap: () => Navigator.pop(context, index),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (hour != null) {
+      setState(() {
+        _selectedDateTime = DateTime(
+          _selectedDateTime.year,
+          _selectedDateTime.month,
+          _selectedDateTime.day,
+          hour,
+          0,
+        );
+      });
+    }
+  }
+
+  // 이용시간 선택
+  Future<void> _selectUsageHours() async {
+    final hours = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('이용시간 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: ListView.builder(
+            itemCount: 12,
+            itemBuilder: (context, index) {
+              final hour = index + 1;
+              return ListTile(
+                title: Text('$hour시간'),
+                subtitle: Text('₩${(hour * 30000).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}'),
+                onTap: () => Navigator.pop(context, hour),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (hours != null) {
+      setState(() {
+        _usageHours = hours;
+      });
+    }
+  }
+
+  // 숙박 일수 선택
+  Future<void> _selectOvernightDays() async {
+    final days = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('숙박 일수 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: ListView.builder(
+            itemCount: 7,
+            itemBuilder: (context, index) {
+              final day = index + 1;
+              return ListTile(
+                title: Text('$day박'),
+                subtitle: Text('₩${(day * 510000).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}'),
+                onTap: () => Navigator.pop(context, day),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (days != null) {
+      setState(() {
+        _overnightDays = days;
+      });
+    }
+  }
+
+  // 병원동행 시간 선택
+  Future<void> _selectHospitalCompanionHours() async {
+    final hours = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('병원동행 이용시간 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: ListView.builder(
+            itemCount: 10,
+            itemBuilder: (context, index) {
+              final hour = index + 1;
+              return ListTile(
+                title: Text('$hour시간'),
+                subtitle: Text('₩${(hour * 20000).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}'),
+                onTap: () => Navigator.pop(context, hour),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (hours != null) {
+      setState(() {
+        _hospitalCompanionHours = hours;
+      });
+    }
   }
 
   @override
@@ -863,12 +1209,10 @@ class _BookingScreenState extends State<BookingScreen> {
     required IconData icon,
     TextInputType? keyboardType,
     VoidCallback? onSelectSaved,
-    bool enabled = true,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      enabled: enabled,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
@@ -881,363 +1225,5 @@ class _BookingScreenState extends State<BookingScreen> {
             : null,
       ),
     );
-  }
-
-  Future<void> _selectDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _selectedDateTime,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-
-    if (date == null || !mounted) return;
-
-    setState(() {
-      _selectedDateTime = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        _selectedDateTime.hour,
-        0, // 분은 항상 0
-      );
-    });
-  }
-
-  Future<void> _selectHospitalCompanionHours() async {
-    final hours = List.generate(10, (index) => index + 1); // 1시간부터 10시간까지
-    
-    final selectedHours = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('병원동행 이용시간 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: hours.length,
-            itemBuilder: (context, index) {
-              final hour = hours[index];
-              final isSelected = hour == _hospitalCompanionHours;
-              return ListTile(
-                selected: isSelected,
-                selectedTileColor: Colors.grey.shade100,
-                leading: Icon(
-                  Icons.local_hospital,
-                  color: isSelected ? Colors.grey.shade800 : Colors.grey,
-                ),
-                title: Text(
-                  '$hour시간',
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Colors.grey.shade800 : Colors.black87,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Text('₩${hour * 20000} (시간당 20,000원)'),
-                trailing: isSelected
-                    ? Icon(Icons.check_circle, color: Colors.grey.shade800)
-                    : null,
-                onTap: () => Navigator.of(context).pop(hour),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-        ],
-      ),
-    );
-
-    if (selectedHours != null) {
-      setState(() {
-        _hospitalCompanionHours = selectedHours;
-      });
-    }
-  }
-
-  Future<void> _selectOvernightDays() async {
-    final days = List.generate(10, (index) => index + 1); // 1박부터 10박까지
-    
-    final selectedDays = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('숙박 일수 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: days.length,
-            itemBuilder: (context, index) {
-              final day = days[index];
-              final isSelected = day == _overnightDays;
-              return ListTile(
-                selected: isSelected,
-                selectedTileColor: Colors.grey.shade100,
-                leading: Icon(
-                  Icons.hotel,
-                  color: isSelected ? Colors.grey.shade800 : Colors.grey,
-                ),
-                title: Text(
-                  '$day박',
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Colors.grey.shade800 : Colors.black87,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Text('${day * 510000}원 (1박당 510,000원)'),
-                trailing: isSelected
-                    ? Icon(Icons.check_circle, color: Colors.grey.shade800)
-                    : null,
-                onTap: () => Navigator.of(context).pop(day),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-        ],
-      ),
-    );
-
-    if (selectedDays == null || !mounted) return;
-
-    setState(() {
-      _overnightDays = selectedDays;
-    });
-  }
-
-  Future<void> _selectUsageHours() async {
-    final hours = [4, 8, 12, 16, 20, 24];
-    
-    final selectedHours = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('이용시간 선택'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: hours.map((hour) {
-            final isSelected = hour == _usageHours;
-            return ListTile(
-              selected: isSelected,
-              selectedTileColor: Colors.grey.shade100,
-              leading: Icon(
-                Icons.schedule,
-                color: isSelected ? Colors.grey.shade800 : Colors.grey,
-              ),
-              title: Text(
-                '$hour시간',
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.grey.shade800 : Colors.black87,
-                  fontSize: 16,
-                ),
-              ),
-              subtitle: Text('${hour * 30000}원 (시간당 30,000원)'),
-              trailing: isSelected
-                  ? Icon(Icons.check_circle, color: Colors.grey.shade800)
-                  : null,
-              onTap: () => Navigator.of(context).pop(hour),
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-        ],
-      ),
-    );
-
-    if (selectedHours == null || !mounted) return;
-
-    setState(() {
-      _usageHours = selectedHours;
-    });
-  }
-
-  Future<void> _selectHour() async {
-    final selectedHour = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('시간 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: 24,
-            itemBuilder: (context, index) {
-              final hour = index;
-              final isSelected = hour == _selectedDateTime.hour;
-              
-              return ListTile(
-                selected: isSelected,
-                selectedTileColor: Colors.grey.shade100,
-                leading: Icon(
-                  Icons.access_time,
-                  color: isSelected ? Colors.grey.shade800 : Colors.grey,
-                ),
-                title: Text(
-                  '${hour.toString().padLeft(2, '0')}:00',
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Colors.grey.shade800 : Colors.black87,
-                    fontSize: 16,
-                  ),
-                ),
-                trailing: isSelected
-                    ? Icon(Icons.check_circle, color: Colors.grey.shade800)
-                    : null,
-                onTap: () => Navigator.of(context).pop(hour),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-        ],
-      ),
-    );
-
-    if (selectedHour == null || !mounted) return;
-
-    setState(() {
-      _selectedDateTime = DateTime(
-        _selectedDateTime.year,
-        _selectedDateTime.month,
-        _selectedDateTime.day,
-        selectedHour,
-        0, // 분은 항상 0
-      );
-    });
-  }
-
-  Future<void> _selectLocation(TextEditingController controller) async {
-    final selected = await showDialog<LocationInfo>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('저장된 장소 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _savedLocations.length,
-            itemBuilder: (context, index) {
-              final location = _savedLocations[index];
-              return ListTile(
-                leading: Icon(Icons.location_on, color: Colors.grey.shade700),
-                title: Text(location.displayName),
-                subtitle: Text(location.fullAddress),
-                onTap: () => Navigator.of(context).pop(location),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-
-    if (selected != null) {
-      controller.text = selected.fullAddress;
-    }
-  }
-
-  Future<void> _selectPassenger() async {
-    final selected = await showDialog<PassengerInfo>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('저장된 탑승자 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _savedPassengers.length,
-            itemBuilder: (context, index) {
-              final passenger = _savedPassengers[index];
-              return ListTile(
-                title: Text(passenger.name),
-                subtitle: Text(passenger.phoneNumber),
-                onTap: () => Navigator.of(context).pop(passenger),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-
-    if (selected != null) {
-      _passengerNameController.text = selected.name;
-      _passengerPhoneController.text = selected.phoneNumber;
-    }
-  }
-
-  Future<void> _selectVehicle() async {
-    final selected = await showDialog<VehicleInfo>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('저장된 차량 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _savedVehicles.length,
-            itemBuilder: (context, index) {
-              final vehicle = _savedVehicles[index];
-              return ListTile(
-                title: Text(vehicle.vehicleType),
-                subtitle: Text(vehicle.licensePlate),
-                onTap: () => Navigator.of(context).pop(vehicle),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-
-    if (selected != null) {
-      _vehicleTypeController.text = selected.vehicleType;
-      _licensePlateController.text = selected.licensePlate;
-    }
-  }
-
-  Future<void> _selectPartnerPreference() async {
-    final selected = await showDialog<PartnerPreference>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('파트너 선택사항 선택'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _savedPartnerPreferences.length,
-            itemBuilder: (context, index) {
-              final preference = _savedPartnerPreferences[index];
-              return ListTile(
-                leading: Icon(Icons.person_search, color: Colors.grey.shade700),
-                title: Text(preference.displayText),
-                subtitle: Text('등록일: ${preference.createdAt.month}/${preference.createdAt.day}'),
-                onTap: () => Navigator.of(context).pop(preference),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-
-    if (selected != null) {
-      setState(() {
-        _selectedPartnerPreferenceId = selected.id;
-      });
-    }
   }
 }

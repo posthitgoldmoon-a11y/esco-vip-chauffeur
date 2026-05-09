@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -674,6 +674,23 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   Future<void> _addPaymentCard() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CardRegistrationScreen()),
+    );
+    if (result == true) {
+      _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ 카드가 등록되었습니다'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _addPaymentCard_OLD() async {
     final cardNumberCtrl = TextEditingController();
     final cardholderNameCtrl = TextEditingController();
     final expiryMonthCtrl = TextEditingController();
@@ -985,3 +1002,4 @@ class _MyPageScreenState extends State<MyPageScreen> {
     otherHobbyCtrl.dispose();
   }
 }
+

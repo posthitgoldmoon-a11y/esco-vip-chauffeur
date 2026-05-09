@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/booking.dart';
 
 class FirestoreService {
@@ -70,7 +70,7 @@ class FirestoreService {
         ...passenger,
         'id': docId,
         'userId': userId,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('탑승자 정보 저장 실패: $e');
@@ -110,7 +110,7 @@ class FirestoreService {
         ...vehicle,
         'id': docId,
         'userId': userId,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('차량 정보 저장 실패: $e');
@@ -150,7 +150,7 @@ class FirestoreService {
         ...location,
         'id': docId,
         'userId': userId,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('장소 저장 실패: $e');
@@ -191,7 +191,7 @@ class FirestoreService {
         ...preference,
         'id': docId,
         'userId': userId,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('파트너 선호사항 저장 실패: $e');
@@ -230,8 +230,8 @@ class FirestoreService {
       await _firestore.collection('announcements').doc(docId).set({
         ...announcement,
         'id': docId,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('공지사항 생성 실패: $e');
@@ -257,7 +257,7 @@ class FirestoreService {
     try {
       await _firestore.collection('announcements').doc(announcementId).update({
         ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('공지사항 업데이트 실패: $e');
@@ -283,7 +283,7 @@ class FirestoreService {
         ...card,
         'id': docId,
         'userId': userId,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('결제 카드 저장 실패: $e');
@@ -313,3 +313,4 @@ class FirestoreService {
     }
   }
 }
+

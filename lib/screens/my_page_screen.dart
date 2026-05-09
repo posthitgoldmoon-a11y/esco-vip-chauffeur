@@ -11,6 +11,7 @@ import '../models/payment_card.dart';
 import '../models/partner_preference.dart';
 import '../widgets/address_search_dialog.dart';
 import '../screens/terms_screen.dart';
+import '../screens/card_registration_screen.dart';
 import 'login_screen.dart';
 
 class MyPageScreen extends StatefulWidget {
@@ -1002,4 +1003,5 @@ class _MyPageScreenState extends State<MyPageScreen> {
     otherHobbyCtrl.dispose();
   }
 }
+
 

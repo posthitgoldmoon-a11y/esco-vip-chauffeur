@@ -1,15 +1,17 @@
-class LocationInfo {
+﻿class LocationInfo {
   final String id;
-  final String address; // 도로명 주소
-  final String? detailAddress; // 상세 주소
-  final String? name; // 별칭 (예: "집", "회사")
+  final String address;
+  final String? detailAddress;
+  final String? name;
+  final DateTime createdAt;
 
   LocationInfo({
     required this.id,
     required this.address,
     this.detailAddress,
     this.name,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
@@ -17,15 +19,30 @@ class LocationInfo {
       'address': address,
       'detailAddress': detailAddress,
       'name': name,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
   factory LocationInfo.fromMap(Map<String, dynamic> map) {
+    DateTime parsedDate;
+    try {
+      final raw = map['createdAt'];
+      if (raw == null) {
+        parsedDate = DateTime.now();
+      } else if (raw is String) {
+        parsedDate = DateTime.parse(raw);
+      } else {
+        parsedDate = (raw as dynamic).toDate();
+      }
+    } catch (_) {
+      parsedDate = DateTime.now();
+    }
     return LocationInfo(
-      id: map['id'] as String,
-      address: map['address'] as String,
-      detailAddress: map['detailAddress'] as String?,
-      name: map['name'] as String?,
+      id: map['id']?.toString() ?? '',
+      address: map['address']?.toString() ?? '',
+      detailAddress: map['detailAddress']?.toString(),
+      name: map['name']?.toString(),
+      createdAt: parsedDate,
     );
   }
 
@@ -34,12 +51,14 @@ class LocationInfo {
     String? address,
     String? detailAddress,
     String? name,
+    DateTime? createdAt,
   }) {
     return LocationInfo(
       id: id ?? this.id,
       address: address ?? this.address,
       detailAddress: detailAddress ?? this.detailAddress,
       name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 

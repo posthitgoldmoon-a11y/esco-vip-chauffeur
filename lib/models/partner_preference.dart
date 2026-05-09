@@ -1,4 +1,4 @@
-class PartnerPreference {
+﻿class PartnerPreference {
   final String id;
   final bool nonSmoking; // 비흡연
   final String? agePreference; // 20대, 30대, 40대, 50대
@@ -58,3 +58,4 @@ class PartnerPreference {
     return items.isEmpty ? '선택 안 함' : items.join(' · ');
   }
 }
+

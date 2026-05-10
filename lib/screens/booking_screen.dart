@@ -530,7 +530,7 @@ class _BookingScreenState extends State<BookingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Location Section
-            _buildSectionTitle('출발지 / 경유지 / 도착지', required: true),
+            _buildSectionTitle('출발지 / 경유지 / 도착지', true),
             const SizedBox(height: 8),
             _buildLocationField(
               controller: _departureController,
@@ -575,7 +575,7 @@ class _BookingScreenState extends State<BookingScreen> {
             // DateTime Section
             Row(
               children: [
-                Expanded(child: _buildSectionTitle('일정', required: true)),
+                Expanded(child: _buildSectionTitle('일정', true)),
                 Row(
                   children: [
                     Checkbox(
@@ -929,7 +929,7 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 24),
 
             // Passenger Section
-            _buildSectionTitle('탑승자 정보', required: true),
+            _buildSectionTitle('탑승자 정보', true),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _passengerNameController,
@@ -948,7 +948,7 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 24),
 
             // Vehicle Section
-            _buildSectionTitle('이용 차량', required: true),
+            _buildSectionTitle('이용 차량', true),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _vehicleTypeController,
@@ -1171,13 +1171,15 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-      ),
+  Widget _buildSectionTitle(String title, [bool isRequired = false]) {
+    return Row(
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        if (isRequired) ...[
+          const SizedBox(width: 4),
+          const Text("*필수", style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+        ],
+      ],
     );
   }
 
@@ -1227,4 +1229,5 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
+
 

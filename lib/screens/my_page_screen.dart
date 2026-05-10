@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -27,6 +28,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   List<LocationInfo> _locations = [];
   List<PaymentCard> _paymentCards = [];
   List<PartnerPreference> _partnerPreferences = [];
+  List<String> _parkingLocations = [];
 
   @override
   void initState() {
@@ -158,6 +160,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
           const SizedBox(height: 16),
           _buildSection('결제 카드', _paymentCards.length, Icons.credit_card, () => _addPaymentCard()),
           ..._paymentCards.map((c) => _buildPaymentCardTile(c)),
+          const SizedBox(height: 16),
+          _buildSection('주차 위치', _parkingLocations.length, Icons.local_parking, () => _addParkingLocation()),
+          ..._parkingLocations.asMap().entries.map((entry) => _buildParkingLocationTile(entry.key, entry.value)),
           const SizedBox(height: 16),
           _buildSection('파트너 선택사항', _partnerPreferences.length, Icons.person_search, () => _addPartnerPreference()),
           ..._partnerPreferences.map((p) => _buildPartnerPreferenceTile(p)),
@@ -852,6 +857,62 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 
+
+  Widget _buildParkingLocationTile(int index, String location) {
+    return Card(
+      child: ListTile(
+        leading: Icon(Icons.local_parking, color: Colors.grey.shade700),
+        title: Text(location),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () async {
+            final box = await Hive.openBox('parkingLocations');
+            await box.deleteAt(index);
+            _loadData();
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addParkingLocation() async {
+    final ctrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('주차 위치 추가'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: '주차 위치',
+            hintText: '예: 강남구 테헤란로 123 지하 2층 A구역',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          ElevatedButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isEmpty) return;
+              final box = await Hive.openBox('parkingLocations');
+              await box.add(ctrl.text.trim());
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('주차 위치가 저장되었습니다')),
+              );
+              _loadData();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade800),
+            child: const Text('추가'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+  }
+
   Future<void> _addPartnerPreference() async {
     bool nonSmoking = false;
     String? selectedAge;
@@ -1003,5 +1064,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
     otherHobbyCtrl.dispose();
   }
 }
+
+
+
 
 

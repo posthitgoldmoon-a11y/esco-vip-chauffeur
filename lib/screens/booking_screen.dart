@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -530,7 +530,7 @@ class _BookingScreenState extends State<BookingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Location Section
-            _buildSectionTitle('출발지 / 경유지 / 도착지'),
+            _buildSectionTitle('출발지 / 경유지 / 도착지', required: true),
             const SizedBox(height: 8),
             _buildLocationField(
               controller: _departureController,
@@ -575,7 +575,7 @@ class _BookingScreenState extends State<BookingScreen> {
             // DateTime Section
             Row(
               children: [
-                Expanded(child: _buildSectionTitle('일정')),
+                Expanded(child: _buildSectionTitle('일정', required: true)),
                 Row(
                   children: [
                     Checkbox(
@@ -929,7 +929,7 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 24),
 
             // Passenger Section
-            _buildSectionTitle('탑승자 정보'),
+            _buildSectionTitle('탑승자 정보', required: true),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _passengerNameController,
@@ -948,7 +948,7 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 24),
 
             // Vehicle Section
-            _buildSectionTitle('이용 차량'),
+            _buildSectionTitle('이용 차량', required: true),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _vehicleTypeController,
@@ -1227,3 +1227,4 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
+

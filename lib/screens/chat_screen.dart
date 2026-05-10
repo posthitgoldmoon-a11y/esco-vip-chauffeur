@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/storage_service.dart';
@@ -22,12 +22,19 @@ class _ChatScreenState extends State<ChatScreen> {
       return const AdminChatListScreen();
     }
 
+    // userId 또는 userName이 null이면 로딩 화면 표시
+    final userId = appProvider.userId;
+    final userName = appProvider.userName;
+
+    if (userId == null || userName == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     // 일반 고객인 경우 1:1 채팅방으로
     return FutureBuilder(
-      future: StorageService.getOrCreateChatRoom(
-        appProvider.userId!,
-        appProvider.userName!,
-      ),
+      future: StorageService.getOrCreateChatRoom(userId, userName),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -40,6 +47,12 @@ class _ChatScreenState extends State<ChatScreen> {
             body: Center(
               child: Text('오류가 발생했습니다: ${snapshot.error}'),
             ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const Scaffold(
+            body: Center(child: Text('채팅방을 불러올 수 없습니다')),
           );
         }
 

@@ -881,11 +881,28 @@ class _MyPageScreenState extends State<MyPageScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('주차 위치 추가'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '차량이 주차된 위치를 자세히 적어주세요.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '예시) 3층 주차장 B37\n예시) 지하 2층 엘리베이터 앞 A-15\n예시) 건물 옆 노상주차장 3번',
+              style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+            ),
+            const SizedBox(height: 12),
         content: TextField(
           controller: ctrl,
           maxLines: 3,
           decoration: const InputDecoration(
             labelText: '주차 위치',
+              hintText: '예) 3층 주차장 B37',
+              helperText: '층수, 구역, 번호를 포함해서 적어주세요',
+              helperMaxLines: 2,
             hintText: '예: 강남구 테헤란로 123 지하 2층 A구역',
             border: OutlineInputBorder(),
           ),
@@ -1064,6 +1081,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
     otherHobbyCtrl.dispose();
   }
 }
+
+
+
 
 
 

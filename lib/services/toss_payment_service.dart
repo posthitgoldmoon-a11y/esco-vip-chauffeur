@@ -1,83 +1,18 @@
-﻿import 'dart:convert';
-import 'dart:math';
-import 'package:http/http.dart' as http;
+﻿import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:uuid/uuid.dart';
 
 class TossPaymentService {
-  static const String _clientKey = "test_ck_E92LAa5PVbI72GoXg0B987YmpXyJ";
-  static const String _secretKey = "test_sk_kYG57Eba3G9Lq47Go1X9rpWDOxmA";
-  static const String _baseUrl = "https://api.tosspayments.com";
+  // 클라이언트 키만 보유 (시크릿 키는 서버 Cloud Functions에서만 사용)
+  static const String clientKey = 'test_ck_zXLkKEypNArWmo50nX3lmeaxYG5R';
 
-  // 빌링키 발급 페이지 URL 생성
-  static String getBillingAuthUrl({
-    required String customerKey,
-    required String successUrl,
-    required String failUrl,
-  }) {
-    return "https://api.tosspayments.com/v1/billing/authorizations/card?"
-        "clientKey=$_clientKey"
-        "&customerKey=$customerKey"
-        "&successUrl=${Uri.encodeComponent(successUrl)}"
-        "&failUrl=${Uri.encodeComponent(failUrl)}";
+  // 고객 고유키 생성 (uid 기반)
+  static String generateCustomerKey(String uid) {
+    return 'customer_${uid}_${const Uuid().v4().substring(0, 8)}';
   }
 
-
-  // 빌링키 발급
-  static Future<Map<String, dynamic>> issueBillingKey({
-    required String customerKey,
-    required String authKey,
-  }) async {
-    final String encoded = base64Encode(utf8.encode("$_secretKey:"));
-
-    final response = await http.post(
-      Uri.parse("$_baseUrl/v1/billing/authorizations/issue"),
-      headers: {
-        "Authorization": "Basic $encoded",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "authKey": authKey,
-        "customerKey": customerKey,
-      }),
-    );
-
-    return jsonDecode(response.body);
-  }
-
-  // 빌링키로 결제 요청
-  static Future<Map<String, dynamic>> payWithBillingKey({
-    required String billingKey,
-    required String customerKey,
-    required int amount,
-    required String orderName,
-    required String orderId,
-    required String customerEmail,
-    required String customerName,
-  }) async {
-    final String encoded = base64Encode(
-      utf8.encode("$_secretKey:"),
-    );
-
-    final response = await http.post(
-      Uri.parse("$_baseUrl/v1/billing/$billingKey"),
-      headers: {
-        "Authorization": "Basic $encoded",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "customerKey": customerKey,
-        "amount": amount,
-        "orderId": orderId,
-        "orderName": orderName,
-        "customerEmail": customerEmail,
-        "customerName": customerName,
-      }),
-    );
-
-    return jsonDecode(response.body);
-  }
-
-  // 빌링키 Firestore 저장
+  // 빌링키 Firestore에 저장 (uid 파라미터 포함)
   static Future<void> saveBillingKey({
     required String uid,
     required String billingKey,
@@ -88,37 +23,66 @@ class TossPaymentService {
     await FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
-        .collection('billing')
-        .doc('card')
-        .set({
+        .collection('paymentCards')
+        .add({
       'billingKey': billingKey,
       'customerKey': customerKey,
       'cardNumber': cardNumber,
       'cardCompany': cardCompany,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'isDefault': false,
     });
   }
 
-  // 빌링키 조회
-  static Future<Map<String, dynamic>?> getBillingKey(String uid) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('billing')
-        .doc('card')
-        .get();
-    return doc.data();
+  // 빌링키로 결제 승인 (Cloud Function 호출)
+  static Future<Map<String, dynamic>> approveBillingPayment({
+    required String billingKey,
+    required String customerKey,
+    required int amount,
+    required String orderName,
+    String? customerEmail,
+    String? customerName,
+  }) async {
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('approveBillingPayment');
+
+      final result = await callable.call({
+        'billingKey': billingKey,
+        'customerKey': customerKey,
+        'amount': amount,
+        'orderName': orderName,
+        'customerEmail': customerEmail ?? '',
+        'customerName': customerName ?? '고객',
+      });
+
+      return Map<String, dynamic>.from(result.data);
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception('결제 실패: ${e.message}');
+    } catch (e) {
+      throw Exception('결제 오류: $e');
+    }
   }
 
-  // 고객키 생성
-  static String generateCustomerKey(String uid) {
-    return "customer_${uid}_${DateTime.now().millisecondsSinceEpoch}";
-  }
+  // 빌링키 발급 승인 (Cloud Function 호출)
+  static Future<Map<String, dynamic>> issueBillingKey({
+    required String authKey,
+    required String customerKey,
+  }) async {
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('issueBillingKey');
 
-  // 주문ID 생성
-  static String generateOrderId() {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    final random = Random();
-    return List.generate(20, (index) => chars[random.nextInt(chars.length)]).join();
+      final result = await callable.call({
+        'authKey': authKey,
+        'customerKey': customerKey,
+      });
+
+      return Map<String, dynamic>.from(result.data);
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception('빌링키 발급 실패: ${e.message}');
+    } catch (e) {
+      throw Exception('빌링키 발급 오류: $e');
+    }
   }
 }

@@ -895,17 +895,18 @@ class _MyPageScreenState extends State<MyPageScreen> {
               style: TextStyle(fontSize: 12, color: Colors.blueGrey),
             ),
             const SizedBox(height: 12),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: '주차 위치',
-              hintText: '예) 3층 주차장 B37',
-              helperText: '층수, 구역, 번호를 포함해서 적어주세요',
-              helperMaxLines: 2,
-            hintText: '예: 강남구 테헤란로 123 지하 2층 A구역',
-            border: OutlineInputBorder(),
-          ),
+            TextField(
+              controller: ctrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: '주차 위치',
+                hintText: '예) 3층 주차장 B37',
+                helperText: '층수, 구역, 번호를 포함해서 적어주세요',
+                helperMaxLines: 2,
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),

@@ -85,4 +85,49 @@ class TossPaymentService {
       throw Exception('빌링키 발급 오류: $e');
     }
   }
+
+  // 저장된 빌링키 가져오기
+  static Future<Map<String, dynamic>?> getBillingKey(String uid) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('paymentCards')
+          .where('isDefault', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return null;
+
+      return snapshot.docs.first.data();
+    } catch (e) {
+      throw Exception('빌링키 조회 실패: $e');
+    }
+  }
+
+  // 빌링키로 결제 (간편 결제)
+  static Future<Map<String, dynamic>> payWithBillingKey({
+    required String billingKey,
+    required String customerKey,
+    required int amount,
+    required String orderName,
+    required String orderId,
+    String? customerEmail,
+    String? customerName,
+  }) async {
+    return await approveBillingPayment(
+      billingKey: billingKey,
+      customerKey: customerKey,
+      amount: amount,
+      orderName: orderName,
+      customerEmail: customerEmail,
+      customerName: customerName,
+    );
+  }
+
+  // 주문번호 생성
+  static String generateOrderId() {
+    final now = DateTime.now();
+    return 'ORDER_${now.millisecondsSinceEpoch}_${const Uuid().v4().substring(0, 8)}';
+  }
 }

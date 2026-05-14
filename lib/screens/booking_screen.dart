@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -1165,6 +1166,33 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
 
             const SizedBox(height: 16),
+
+            OutlinedButton.icon(
+              onPressed: () async {
+                final uri = Uri.parse('tel:0503-7153-8223');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
+              },
+              icon: const Icon(Icons.phone, color: Color(0xFF1a73e8)),
+              label: const Text(
+                '전화로 예약하기  0503-7153-8223',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF1a73e8),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 52),
+                side: const BorderSide(color: Color(0xFF1a73e8), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -1229,5 +1257,7 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 }
+
+
 
 

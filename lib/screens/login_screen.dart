@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/auth_service.dart';
@@ -202,6 +202,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: const Text(
+                  '※ 토스페이먼츠 결제 심사용 - 게스트로 들어가기를 눌러 서비스를 확인하실 수 있습니다.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
               if (_isLoading) ...[
                 const SizedBox(height: 24),
                 const Center(
@@ -258,3 +267,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+  Widget _buildTestAccountInfo() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        border: Border.all(color: Colors.orange.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Column(
+        children: [
+          Text('🔑 토스페이먼츠 심사용', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+
+
+
+

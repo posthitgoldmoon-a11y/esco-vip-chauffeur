@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -291,6 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
 
                     const SizedBox(height: 16),
+                    _buildFooter(),
                   ],
                 ),
               ),
@@ -661,4 +662,52 @@ class _HomeScreenState extends State<HomeScreen> {
     titleController.dispose();
     contentController.dispose();
   }
+
+
+  void _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      color: const Color(0xFF1a1a2e),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 10),
+          const Text('ESCO VIP Chauffeur', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          const Text('상호: 팬토리 | 대표자: 정상일', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const Text('사업자등록번호: 897-22-02307', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const Text('통신판매업: 2025-서울강남-06498', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const Text('주소: 서울 강남구 영동대로 510 삼성빌딩 3층 304-4호', style: TextStyle(color: Colors.white60, fontSize: 12), textAlign: TextAlign.center),
+          const Text('고객센터: 0507-1476-2344 | posthit@naver.com', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const Text('CS운영시간: 평일 09:00~18:00', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(onPressed: () => _launchUrl('https://esco-vip-chauffeur.web.app/terms.html'), child: const Text('이용약관', style: TextStyle(color: Colors.white54, fontSize: 12))),
+              const Text('|', style: TextStyle(color: Colors.white30)),
+              TextButton(onPressed: () => _launchUrl('https://esco-vip-chauffeur.web.app/privacy.html'), child: const Text('개인정보처리방침', style: TextStyle(color: Colors.white54, fontSize: 12))),
+              const Text('|', style: TextStyle(color: Colors.white30)),
+              TextButton(onPressed: () => _launchUrl('https://esco-vip-chauffeur.web.app/refund.html'), child: const Text('환불정책', style: TextStyle(color: Colors.white54, fontSize: 12))),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text('ⓒ 2025 팬토리. All rights reserved.', style: TextStyle(color: Colors.white38, fontSize: 11)),
+        ],
+      ),
+    );
+  }
 }
+
+
+
+
+
+
+

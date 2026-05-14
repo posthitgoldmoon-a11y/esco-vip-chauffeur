@@ -7,7 +7,7 @@ class TermsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('약관'),
+        title: const Text('이용약관/개인정보/환불취소정책'),
       ),
       body: ListView(
         children: [
@@ -33,6 +33,14 @@ class TermsScreen extends StatelessWidget {
             () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const LocationTermsDetailScreen()),
+            ),
+          ),
+          _buildTermTile(
+            context,
+            '환불/취소 정책',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RefundPolicyDetailScreen()),
             ),
           ),
         ],
@@ -328,6 +336,55 @@ class LocationTermsDetailScreen extends StatelessWidget {
 [부칙]
 시행일자: 2026년 2월 15일''',
           style: const TextStyle(fontSize: 14, height: 1.6),
+        ),
+      ),
+    );
+  }
+}
+
+
+class RefundPolicyDetailScreen extends StatelessWidget {
+  const RefundPolicyDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('환불/취소 정책')),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          '''환불/취소 정책
+
+시행일: 2025년 1월 1일
+
+제1조 (환불 기준)
+서비스 이용 전 취소 시 아래 기준에 따라 환불됩니다.
+
+- 서비스 24시간 전 취소: 100% 환불
+- 서비스 12시간 전 취소: 70% 환불
+- 서비스 6시간 전 취소: 50% 환불
+- 서비스 3시간 전 취소: 30% 환불
+- 서비스 1시간 이내 취소 또는 당일 취소: 환불 불가
+
+제2조 (환불 절차)
+1. 앱 내 예약내역에서 취소 신청
+2. 고객센터 확인 후 3~5 영업일 이내 처리
+3. 결제 수단으로 환불 (카드 취소 또는 계좌 이체)
+
+제3조 (환불 불가 사유)
+- 서비스 이용 완료 후
+- 고객 귀책 사유로 인한 취소 (연락 두절, 현장 취소 등)
+- 드라이버 출발 후 취소
+
+제4조 (고객센터)
+전화: 0507-1476-2344
+이메일: posthit@naver.com
+운영시간: 평일 09:00~18:00
+
+상호: 팬토리 | 대표자: 정상일
+사업자등록번호: 897-22-02307
+주소: 서울 강남구 영동대로 510 삼성빌딩 3층 304-4호''',
+          style: TextStyle(fontSize: 14, height: 1.6),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 ﻿import 'package:hive_flutter/hive_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
@@ -43,6 +44,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
       final locations = await StorageService.getLocations();
       final cards = await StorageService.getPaymentCards();
       final preferences = await StorageService.getPartnerPreferences();
+      final parkingBox = await Hive.openBox('parkingLocations');
+      final parkingLocations = parkingBox.values.cast<String>().toList();
 
       if (kDebugMode) {
         print('✅ 데이터 로드 성공:');
@@ -59,6 +62,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
         _locations = locations;
         _paymentCards = cards;
         _partnerPreferences = preferences;
+        _parkingLocations = parkingLocations;
+        _parkingLocations = parkingLocations;
       });
     } catch (e) {
       if (kDebugMode) {
@@ -170,7 +175,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
           Card(
             child: ListTile(
               leading: Icon(Icons.description, color: Colors.grey.shade700),
-              title: const Text('약관'),
+              title: const Text('이용약관/개인정보/환불취소정책'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.push(
@@ -180,6 +185,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
               },
             ),
           ),
+
         ],
       ),
     );

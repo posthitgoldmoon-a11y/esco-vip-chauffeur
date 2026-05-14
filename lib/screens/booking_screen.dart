@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
@@ -43,6 +44,7 @@ class _BookingScreenState extends State<BookingScreen> {
   List<VehicleInfo> _savedVehicles = [];
   List<LocationInfo> _savedLocations = [];
   List<PartnerPreference> _savedPartnerPreferences = [];
+  List<String> _savedParkingLocations = [];
   
   // 요금 계산
   int get _totalAmount {
@@ -75,6 +77,8 @@ class _BookingScreenState extends State<BookingScreen> {
       final vehicles = await StorageService.getVehicles();
       final locations = await StorageService.getLocations();
       final preferences = await StorageService.getPartnerPreferences();
+      final parkingBox = await Hive.openBox('parkingLocations');
+      final parkingLocations = parkingBox.values.cast<String>().toList();
 
       if (kDebugMode) {
         print('✅ 예약 화면 - 저장된 데이터 로드:');
@@ -89,6 +93,7 @@ class _BookingScreenState extends State<BookingScreen> {
         _savedVehicles = vehicles;
         _savedLocations = locations;
         _savedPartnerPreferences = preferences;
+        _savedParkingLocations = parkingLocations;
       });
     } catch (e) {
       if (kDebugMode) {
@@ -325,6 +330,45 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   // 저장된 장소 선택
+  Future<void> _selectParkingLocation(TextEditingController controller) async {
+    if (_savedParkingLocations.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장된 주차위치가 없습니다. 마이페이지에서 주차위치를 추가해주세요.')),
+      );
+      return;
+    }
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('저장된 주차위치 선택'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedParkingLocations.length,
+            itemBuilder: (context, index) {
+              final location = _savedParkingLocations[index];
+              return ListTile(
+                leading: const Icon(Icons.local_parking),
+                title: Text(location),
+                onTap: () => Navigator.pop(context, location),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+    if (selected != null) {
+      controller.text = selected;
+    }
+  }
+
   Future<void> _selectLocation(TextEditingController controller) async {
     if (_savedLocations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1088,7 +1132,7 @@ class _BookingScreenState extends State<BookingScreen> {
               controller: _customerParkingLocationController,
               label: '차량이 주차된 위치 (선택)',
               icon: Icons.local_parking,
-              onSelectSaved: () => _selectLocation(_customerParkingLocationController),
+              onSelectSaved: () => _selectParkingLocation(_customerParkingLocationController),
             ),
 
             const SizedBox(height: 24),

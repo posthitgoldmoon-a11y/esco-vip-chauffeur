@@ -645,8 +645,11 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('예약하기'),
+        title: const Text('예약하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF1B2A4A),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
+      backgroundColor: const Color(0xFFF8F8F8),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

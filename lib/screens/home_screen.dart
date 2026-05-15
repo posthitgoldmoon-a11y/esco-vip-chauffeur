@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'booking_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,6 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
           fit: BoxFit.contain,
         ),
         centerTitle: true,
+        backgroundColor: const Color(0xFF1B2A4A),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (appProvider.isAdmin)
             IconButton(
@@ -84,8 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.blue.shade600,
-                            Colors.blue.shade400,
+                            Color(0xFF1B2A4A),
+                            Color(0xFF2E4A7A),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -108,6 +111,32 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                final scaffold = context.findAncestorStateOfType<State>();
+                                if (scaffold != null && scaffold.toString().contains('MainScreen')) {
+                                  (scaffold as dynamic).switchTab(1);
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BookingScreen()));
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFC9A84C),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                '예약하기',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                         ],

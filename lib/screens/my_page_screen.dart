@@ -106,53 +106,58 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ),
         ],
       ),
+      backgroundColor: const Color(0xFFF8F8F8),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    child: Text(
-                      appProvider.userName![0],
-                      style: const TextStyle(fontSize: 32),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    appProvider.userName!,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => _editUserInfo(appProvider),
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('정보 수정'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey.shade700,
-                    ),
-                  ),
-                  if (appProvider.isAdmin) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '관리자',
-                        style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ],
+          // 프로필 헤더
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1B2A4A),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
             ),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC9A84C),
+                    borderRadius: BorderRadius.circular(32),
+                  ),
+                  child: Center(
+                    child: Text(
+                      appProvider.userName != null && appProvider.userName!.isNotEmpty
+                          ? appProvider.userName![0]
+                          : 'U',
+                      style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appProvider.userName ?? '사용자',
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('내 정보 수정하기', style: TextStyle(fontSize: 13, color: Colors.white60)),
+                  ],
+                ),
+                const Spacer(),
+                const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
+              ],
+            ),
           ),
+
+          const SizedBox(height: 16),
           const SizedBox(height: 16),
           _buildSection('탑승자 정보', _passengers.length, Icons.person, () => _addPassenger()),
           ..._passengers.map((p) => _buildPassengerTile(p)),
@@ -187,6 +192,23 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ),
 
         ],
+      ),
+    );
+  }
+
+  Widget _buildMenuTile(IconData icon, String title, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF1B2A4A), size: 22),
+        title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),
     );
   }

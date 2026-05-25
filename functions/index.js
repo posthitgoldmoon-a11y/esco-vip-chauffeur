@@ -179,7 +179,8 @@ exports.onMatchingUpdated = onDocumentUpdated("matchings/{matchingId}", async (e
   if (!after.bookingId) return;
 
   let bookingStatus = null;
-  if (after.status === "taken") bookingStatus = "confirmed";
+  if (after.status === "open") bookingStatus = "pending";
+  else if (after.status === "taken") bookingStatus = "confirmed";
   else if (after.status === "running") bookingStatus = "running";
   else if (after.status === "done") bookingStatus = "completed";
   else if (after.status === "cancelled") bookingStatus = "cancelled";
@@ -197,3 +198,4 @@ exports.onMatchingUpdated = onDocumentUpdated("matchings/{matchingId}", async (e
     console.error("예약 상태 동기화 실패:", e);
   }
 });
+

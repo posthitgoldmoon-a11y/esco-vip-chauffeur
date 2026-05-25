@@ -118,3 +118,82 @@ exports.issueBillingKey = functions.https.onCall(async (data, context) => {
     req.end();
   });
 });
+
+
+// ==================== 예약 -> 매칭 자동 생성 (v2 문법) ====================
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+
+exports.onBookingCreated = onDocumentCreated("bookings/{bookingId}", async (event) => {
+  const snap = event.data;
+  if (!snap) return;
+  const booking = snap.data();
+  const bookingId = event.params.bookingId;
+
+  try {
+    const driverPayRate = 0.67;
+    const totalAmount = booking.totalAmount || 0;
+    const driverPay = Math.floor(totalAmount * driverPayRate);
+
+    let startTime;
+    try {
+      startTime = new Date(booking.scheduledTime);
+    } catch (e) {
+      startTime = new Date();
+    }
+
+    const memoParts = [];
+    if (booking.requestMessage) memoParts.push(booking.requestMessage);
+    if (booking.waypointLocation) memoParts.push("경유: " + booking.waypointLocation);
+    if (booking.licensePlate) memoParts.push("차량번호: " + booking.licensePlate);
+    if (booking.usageHours) memoParts.push("이용시간: " + booking.usageHours + "시간");
+    const memo = memoParts.join(" / ");
+
+    const matching = {
+      bookingId: bookingId,
+      customerName: booking.passengerName || "",
+      customerPhone: booking.passengerPhone || "",
+      startTime: admin.firestore.Timestamp.fromDate(startTime),
+      pickupAddress: booking.departureLocation || "",
+      dropoffAddress: booking.arrivalLocation || "",
+      vehicleType: booking.vehicleType || "",
+      baseFare: totalAmount,
+      driverPay: driverPay,
+      status: "open",
+      driverId: null,
+      memo: memo,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await admin.firestore().collection("matchings").add(matching);
+    console.log("매칭 생성 완료: bookingId=" + bookingId);
+  } catch (e) {
+    console.error("매칭 생성 실패:", e);
+  }
+});
+
+exports.onMatchingUpdated = onDocumentUpdated("matchings/{matchingId}", async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+
+  if (before.status === after.status) return;
+  if (!after.bookingId) return;
+
+  let bookingStatus = null;
+  if (after.status === "taken") bookingStatus = "confirmed";
+  else if (after.status === "running") bookingStatus = "running";
+  else if (after.status === "done") bookingStatus = "completed";
+  else if (after.status === "cancelled") bookingStatus = "cancelled";
+
+  if (!bookingStatus) return;
+
+  try {
+    await admin.firestore().collection("bookings").doc(after.bookingId).update({
+      status: bookingStatus,
+      driverId: after.driverId || null,
+      driverName: after.driverName || null,
+    });
+    console.log("예약 상태 동기화: " + after.bookingId + " -> " + bookingStatus);
+  } catch (e) {
+    console.error("예약 상태 동기화 실패:", e);
+  }
+});
